@@ -47,7 +47,7 @@ impl Json {
     /// See the <a href="https://github.com/36den/json_minimal-rs/">tutorial</a> on github for more.
     pub fn add(&mut self, value: Json) -> &mut Json {
         match self {
-            Json::JSON(values) => match value {
+            Json::JSON(values) | Json::ARRAY(values) => match value {
                 Json::OBJECT { name, value } => {
                     values.push(Json::OBJECT { name, value });
                 }
@@ -73,85 +73,13 @@ impl Json {
             Json::OBJECT {
                 name: _,
                 value: obj_val,
-            } => match obj_val.unbox_mut() {
-                Json::JSON(values) => match value {
-                    Json::OBJECT { name, value } => {
-                        values.push(Json::OBJECT { name, value });
-                    }
-                    Json::JSON(_) => {
-                        panic!("A `Json::JSON` may not be added to a `Json::JSON` if it is not within a `Json::OBJECT`.");
-                    }
-                    Json::ARRAY(vals) => {
-                        values.push(Json::ARRAY(vals));
-                    }
-                    Json::STRING(val) => {
-                        values.push(Json::STRING(val));
-                    }
-                    Json::NUMBER(val) => {
-                        values.push(Json::NUMBER(val));
-                    }
-                    Json::BOOL(val) => {
-                        values.push(Json::BOOL(val));
-                    }
-                    Json::NULL => {
-                        values.push(Json::NULL);
-                    }
-                },
-                Json::ARRAY(values) => match value {
-                    Json::OBJECT { name, value } => {
-                        values.push(Json::OBJECT { name, value });
-                    }
-                    Json::JSON(vals) => {
-                        values.push(Json::JSON(vals));
-                    }
-                    Json::ARRAY(vals) => {
-                        values.push(Json::ARRAY(vals));
-                    }
-                    Json::STRING(val) => {
-                        values.push(Json::STRING(val));
-                    }
-                    Json::NUMBER(val) => {
-                        values.push(Json::NUMBER(val));
-                    }
-                    Json::BOOL(val) => {
-                        values.push(Json::BOOL(val));
-                    }
-                    Json::NULL => {
-                        values.push(Json::NULL);
-                    }
-                },
-                json => {
-                    panic!("The function `add(`&mut self`,`name: String`,`value: Json`)` may only be called on a `Json::JSON`, `Json::ARRAY` or `Json::OBJECT` holding a `Json::JSON` or `Json::ARRAY`. It was called on: {:?}",json);
-                }
-            },
-            Json::ARRAY(values) => match value {
-                Json::OBJECT { name, value } => {
-                    values.push(Json::OBJECT { name, value });
-                }
-                Json::JSON(vals) => {
-                    values.push(Json::JSON(vals));
-                }
-                Json::ARRAY(vals) => {
-                    values.push(Json::ARRAY(vals));
-                }
-                Json::STRING(val) => {
-                    values.push(Json::STRING(val));
-                }
-                Json::NUMBER(val) => {
-                    values.push(Json::NUMBER(val));
-                }
-                Json::BOOL(val) => {
-                    values.push(Json::BOOL(val));
-                }
-                Json::NULL => {
-                    values.push(Json::NULL);
-                }
-            },
+            } => {
+                obj_val.add(value);
+            }
             json => {
                 panic!("The function `add(`&mut self`,`name: String`,`value: Json`)` may only be called on a `Json::JSON`, `Json::ARRAY` or `Json::OBJECT` holding a `Json::JSON` or `Json::ARRAY`. It was called on: {:?}",json);
             }
         }
-
         self
     }
 
@@ -202,35 +130,15 @@ impl Json {
     /// ```
     pub fn get(&self, search: &str) -> Option<&Json> {
         match self {
-            Json::JSON(values) => {
-                for n in 0..values.len() {
-                    match &values[n] {
-                        Json::OBJECT { name, value: _ } => {
-                            if name == search {
-                                return Some(&values[n]);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-                return None;
-            }
+            Json::JSON(values) => values.iter().find(|item| match item {
+                Json::OBJECT { name, value: _ } => name == search,
+                _ => false,
+            }),
             Json::OBJECT { name: _, value } => match value.unbox() {
-                Json::JSON(values) => {
-                    for n in 0..values.len() {
-                        match &values[n] {
-                            Json::OBJECT { name, value: _ } => {
-                                if name == search {
-                                    return Some(&values[n]);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    return None;
-                }
+                Json::JSON(values) => values.iter().find(|item| match item {
+                    Json::OBJECT { name, value: _ } => name == search,
+                    _ => false,
+                }),
                 json => {
                     panic!("The function `get(`&self`,`search: &str`)` may only be called on a `Json::JSON` or a `Json::OBJECT` holding a `Json::JSON`. I was called on: {:?}",json);
                 }
@@ -247,41 +155,23 @@ impl Json {
     /// as only these two variants may hold `Json::OBJECT` which has a `name` field.
     pub fn get_mut(&mut self, search: &str) -> Option<&mut Json> {
         match self {
-            Json::JSON(values) => {
-                for n in 0..values.len() {
-                    match &values[n] {
-                        Json::OBJECT { name, value: _ } => {
-                            if name == search {
-                                return Some(&mut values[n]);
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
+            Json::JSON(values) => values.iter_mut().find(|item| match item {
+                Json::OBJECT { name, value: _ } => name == search,
+                _ => false,
+            }),
             Json::OBJECT { name: _, value } => match value.unbox_mut() {
-                Json::JSON(values) => {
-                    for n in 0..values.len() {
-                        match &values[n] {
-                            Json::OBJECT { name, value: _ } => {
-                                if name == search {
-                                    return Some(&mut values[n]);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
+                Json::JSON(values) => values.iter_mut().find(|item| match item {
+                    Json::OBJECT { name, value: _ } => name == search,
+                    _ => false,
+                }),
                 json => {
-                    panic!("The function `get_mut(`&self`,`search: &str`)` may only be called on a `Json::JSON` or a `Json::OBJECT` holding a `Json::JSON`. I was called on: {:?}",json);
+                    panic!("The function `get(`&self`,`search: &str`)` may only be called on a `Json::JSON` or a `Json::OBJECT` holding a `Json::JSON`. I was called on: {:?}",json);
                 }
             },
             json => {
-                panic!("The function `get_mut(`&self`,`search: &str`)` may only be called on a `Json::JSON` or a `Json::OBJECT` holding a `Json::JSON`. I was called on: {:?}",json);
+                panic!("The function `get(`&self`,`search: &str`)` may only be called on a `Json::JSON`. I was called on: {:?}",json);
             }
         }
-
-        None
     }
 
     /// Enables matching the contents of a `Box`.
