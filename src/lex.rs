@@ -1,10 +1,18 @@
 pub enum JsonToken {
-    Char(char),
+    Char(JsonSyntax),
     String(String),
     Num(String),
     Bool(bool),
     Null,
     LexError{ reason: String },
+}
+
+pub enum JsonSyntax {
+    LeftBrace,
+    RightBrace,
+    LeftBracket,
+    RightBracket,
+    Comma,
 }
 
 pub struct TokenStream<I> 
@@ -100,7 +108,11 @@ impl<I> Iterator for TokenStream<I>
                     }
 
                 }
-                '[' | ']' | '{' | '}' | ',' => { return Some(JsonToken::Char(c));},
+                '[' => {return Some(JsonToken::Char(JsonSyntax::LeftBracket));},
+                ']' => {return Some(JsonToken::Char(JsonSyntax::RightBracket));},
+                '{' => {return Some(JsonToken::Char(JsonSyntax::LeftBrace));},
+                '}' => {return Some(JsonToken::Char(JsonSyntax::RightBrace));},
+                ',' => {return Some(JsonToken::Char(JsonSyntax::Comma));},
                 ' ' | '\n' | '\t' | '\r' => {continue},
                 _ => {
                     return Some(JsonToken::LexError{reason: format!("Found invalid character during lexing: {}", c)});
