@@ -14,6 +14,7 @@ pub enum JsonSyntax {
     RightBrace,
     LeftBracket,
     RightBracket,
+    Colon,
     Comma,
 }
 
@@ -54,7 +55,7 @@ where
                         .chain(
                             self.stream_in
                                 .by_ref()
-                                .take_while(|&c| matches!(c.into(), '0'..='9' | '.' | 'e' | 'E'))
+                                .take_while(|&c| matches!(c.into(), '0'..='9' | '.' | 'e' | 'E' | '-'))
                                 .map(|c| c.into()),
                         )
                         .collect::<String>();
@@ -112,6 +113,7 @@ where
                 ']' => Some(JsonToken::Char(JsonSyntax::RightBracket)),
                 '{' => Some(JsonToken::Char(JsonSyntax::LeftBrace)),
                 '}' => Some(JsonToken::Char(JsonSyntax::RightBrace)),
+                ':' => Some(JsonToken::Char(JsonSyntax::Colon)),
                 ',' => Some(JsonToken::Char(JsonSyntax::Comma)),
                 ' ' | '\n' | '\t' | '\r' => self.next(),
                 _ => Some(JsonToken::LexError {
